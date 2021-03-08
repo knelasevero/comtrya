@@ -4,6 +4,7 @@ use crate::actions::{Action, ActionError, ActionResult};
 use crate::manifest::Manifest;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use tera::Context;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct PackageInstall {
@@ -39,7 +40,11 @@ impl PackageInstall {
 impl CommandAction for PackageInstall {}
 
 impl Action for PackageInstall {
-    fn run(self: &Self, _manifest: &Manifest) -> Result<ActionResult, ActionError> {
+    fn run(
+        self: &Self,
+        _manifest: &Manifest,
+        _context: &Context,
+    ) -> Result<ActionResult, ActionError> {
         let mut command = self.init("brew");
         let mut command = self.inherit(&mut command);
 

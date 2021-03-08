@@ -1,6 +1,10 @@
+use super::FileAction;
 use crate::actions::{Action, ActionError, ActionResult};
 use crate::manifest::Manifest;
 use serde::{Deserialize, Serialize};
+use std::io::Write;
+use std::{fs::create_dir_all, ops::Deref, path::PathBuf};
+use tera::Context;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct FileCopy {
@@ -17,8 +21,65 @@ fn get_true() -> bool {
 
 impl FileCopy {}
 
+impl FileAction for FileCopy {}
+
 impl Action for FileCopy {
-    fn run(self: &Self, _manifest: &Manifest) -> Result<ActionResult, ActionError> {
+    fn run(
+        self: &Self,
+        manifest: &Manifest,
+        context: &Context,
+    ) -> Result<ActionResult, ActionError> {
+        let tera = self.init(manifest);
+
+        let contents = match tera.render(self.from.clone().deref(), context) {
+            Ok(contents) => contents,
+            Err(e) => {
+                return Err(ActionError {
+                    message: format!("Failed to render file: {:?}", e),
+                });
+            }
+        };
+
+        let mut parent = PathBuf::from(&self.to);
+        parent.pop();
+
+        println!("Creating directory {:?}", &parent.to_str());
+        match create_dir_all(parent) {
+            Ok(_) => (),
+            Err(_) => {
+                return Err(ActionError {
+                    message: String::from("Failed to create parent directory"),
+                });
+            }
+        }
+
+        let mut file = match std::fs::File::create(self.to.clone()) {
+            Ok(f) => f,
+            Err(_) => {
+                return Err(ActionError {
+                    message: String::from("Failed to create file"),
+                });
+            }
+        };
+
+        match file.write_all(contents.as_bytes()) {
+            Ok(_) => {}
+            Err(_) => {
+                return Err(ActionError {
+                    message: String::from("Failed to create file"),
+                });
+            }
+        };
+
+        match file.sync_all() {
+            Ok(_) => {}
+            Err(_) => {
+                return Err(ActionError {
+                    message: String::from("Failed to create file"),
+                });
+            }
+        }
+
         Ok(ActionResult {
             message: String::from("Copied"),
         })

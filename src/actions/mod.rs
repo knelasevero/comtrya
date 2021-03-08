@@ -6,6 +6,7 @@ use crate::manifest::Manifest;
 use file::copy::FileCopy;
 use package::install::PackageInstall;
 use serde::{Deserialize, Serialize};
+use tera::Context;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "action")]
@@ -30,5 +31,9 @@ pub struct ActionError {
 }
 
 pub trait Action {
-    fn run(self: &Self, manifest: &Manifest) -> Result<ActionResult, ActionError>;
+    fn run(
+        self: &Self,
+        manifest: &Manifest,
+        context: &Context,
+    ) -> Result<ActionResult, ActionError>;
 }
