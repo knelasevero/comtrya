@@ -1,41 +1,13 @@
 use crate::actions::command::CommandAction;
-use crate::actions::package::{PackageProviders, PackageVariant};
 use crate::actions::{Action, ActionError, ActionResult};
 use crate::manifest::Manifest;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::ops::Deref;
 use tera::Context;
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct PackageInstall {
-    name: Option<String>,
+use super::Package;
+use super::PackageVariant;
 
-    #[serde(default)]
-    list: Vec<String>,
-
-    #[serde(default)]
-    provider: PackageProviders,
-
-    #[serde(default)]
-    repository: Option<String>,
-
-    #[serde(default)]
-    variants: HashMap<os_info::Type, PackageVariant>,
-}
-
-impl PackageInstall {
-    fn packages(&self) -> Vec<String> {
-        if self.name.is_some() {
-            return vec![self.name.clone().unwrap()];
-        }
-
-        if self.list.is_empty() {
-            return vec![];
-        }
-
-        return self.list.clone();
-    }
-}
+pub type PackageInstall = Package;
 
 impl CommandAction for PackageInstall {}
 
@@ -45,15 +17,35 @@ impl Action for PackageInstall {
         _manifest: &Manifest,
         _context: &Context,
     ) -> Result<ActionResult, ActionError> {
-        let mut command = self.init("brew");
-        let mut command = self.inherit(&mut command);
+        let variant: PackageVariant = self.into();
+        let box_provider = variant.provider.clone().get_provider();
+        let provider = box_provider.deref();
 
-        let mut args = self.packages();
-        args.insert(0, String::from("install"));
+        // If the provider isn't available, see if we can bootstrap it
+        if false == provider.available() {
+            match provider.bootstrap() {
+                Ok(_) => {}
+                Err(_) => {
+                    return Err(ActionError {
+                        message: String::from("Provider unavailable"),
+                    });
+                }
+            }
+        }
 
-        let command = self.args(&mut command, args);
+        match provider.install(variant.packages()) {
+            Ok(_) => {
+                println!("Installed");
+                ()
+            }
+            Err(e) => {
+                return Err(e);
+            }
+        }
 
-        self.execute(command)
+        Ok(ActionResult {
+            message: String::from("Done"),
+        })
     }
 }
 

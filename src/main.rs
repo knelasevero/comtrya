@@ -7,12 +7,8 @@ use tera::Tera;
 use walkdir::WalkDir;
 
 mod actions;
-
 mod contexts;
 use contexts::build_contexts;
-
-mod files;
-
 mod manifest;
 use manifest::Manifest;
 

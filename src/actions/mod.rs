@@ -11,7 +11,7 @@ use tera::Context;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "action")]
 pub enum Actions {
-    #[serde(alias = "package.install")]
+    #[serde(alias = "package.install", alias = "package.installed")]
     PackageInstall(PackageInstall),
 
     #[serde(alias = "file.copy")]
