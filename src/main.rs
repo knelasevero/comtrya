@@ -13,8 +13,8 @@ use contexts::build_contexts;
 
 mod files;
 
-mod manifests;
-use manifests::Manifest;
+mod manifest;
+use manifest::Manifest;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "comtrya")]
@@ -203,7 +203,8 @@ fn main() -> Result<()> {
 
             m1.actions.iter().for_each(|action| {
                 let result = match action {
-                    Actions::PackageInstall(p) => p.run(&m1),
+                    Actions::PackageInstall(a) => a.run(&m1),
+                    Actions::FileCopy(a) => a.run(m1),
                 };
 
                 match result {

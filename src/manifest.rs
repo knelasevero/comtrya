@@ -2,7 +2,7 @@ use crate::actions::Actions;
 use crate::files::File;
 use petgraph::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, error::Error, fs::create_dir_all, path::PathBuf};
+use std::{error::Error, fs::create_dir_all, path::PathBuf};
 use tera::{Context, Tera};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -10,17 +10,17 @@ pub struct Manifest {
     #[serde(default)]
     pub name: Option<String>,
 
-    #[serde(skip)]
-    pub root_dir: Option<PathBuf>,
-
-    #[serde(skip)]
-    pub dag_index: Option<NodeIndex<u32>>,
-
     #[serde(default)]
     pub depends: Vec<String>,
 
     #[serde(default)]
     pub actions: Vec<Actions>,
+
+    #[serde(skip)]
+    pub root_dir: Option<PathBuf>,
+
+    #[serde(skip)]
+    pub dag_index: Option<NodeIndex<u32>>,
 }
 
 impl Manifest {
