@@ -31,12 +31,17 @@ impl Action for FileCopy {
     ) -> Result<ActionResult, ActionError> {
         let tera = self.init(manifest);
 
-        let contents = match tera.render(self.from.clone().deref(), context) {
+        let contents = match if true == self.template {
+            tera.render(self.from.clone().deref(), context)
+                .map_err(|e| ActionError {
+                    message: e.to_string(),
+                })
+        } else {
+            self.load(manifest, &self.from)
+        } {
             Ok(contents) => contents,
-            Err(e) => {
-                return Err(ActionError {
-                    message: format!("Failed to render file: {:?}", e),
-                });
+            Err(error) => {
+                return Err(error);
             }
         };
 
