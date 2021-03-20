@@ -4,6 +4,7 @@ mod contexts;
 use contexts::build_contexts;
 mod manifests;
 use manifests::Manifest;
+mod utils;
 
 use ignore::WalkBuilder;
 use petgraph::prelude::*;

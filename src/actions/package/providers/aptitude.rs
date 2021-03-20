@@ -1,7 +1,8 @@
 use super::PackageProvider;
 use crate::actions::{package::PackageVariant, ActionError};
+use crate::utils::command::{run_command, Command};
 use serde::{Deserialize, Serialize};
-use std::process::{Command, Output, Stdio};
+use std::process::Stdio;
 use tracing::{debug, info, span, warn};
 use which::which;
 
@@ -29,24 +30,20 @@ impl PackageProvider for Aptitude {
         // for repository management
         let span = span!(tracing::Level::INFO, "bootstrap").entered();
 
-        let result = match Command::new("apt")
-            .args(&["install", "-y", "software-properties-common", "gpg"])
-            .output()
-        {
-            Ok(Output { status, .. }) if status.success() => Ok(()),
-
-            Ok(Output { stderr, .. }) => Err(ActionError {
-                message: String::from_utf8(stderr).unwrap(),
-            }),
-
-            Err(e) => Err(ActionError {
-                message: e.to_string(),
-            }),
-        };
+        run_command(Command {
+            name: String::from("apt"),
+            args: vec![
+                String::from("install"),
+                String::from("-y"),
+                String::from("software-properties-common"),
+                String::from("gpg"),
+            ],
+            require_root: true,
+        })?;
 
         span.exit();
 
-        result
+        Ok(())
     }
 
     fn has_repository(&self, _package: &PackageVariant) -> bool {
@@ -54,7 +51,7 @@ impl PackageProvider for Aptitude {
     }
 
     fn add_repository(&self, package: &PackageVariant) -> Result<(), ActionError> {
-        match Command::new("apt-add-repository")
+        match std::process::Command::new("apt-add-repository")
             .env("DEBIAN_FRONTEND", "noninteractive")
             .arg("-y")
             .arg(package.repository.clone().unwrap())
@@ -72,7 +69,7 @@ impl PackageProvider for Aptitude {
 
         debug!(message = "Running Aptitude Update");
 
-        Command::new("apt")
+        std::process::Command::new("apt")
             .arg("update")
             .stdin(Stdio::inherit())
             .stdout(Stdio::inherit())
@@ -88,7 +85,7 @@ impl PackageProvider for Aptitude {
     }
 
     fn install(&self, package: &PackageVariant) -> Result<(), ActionError> {
-        match Command::new("apt")
+        match std::process::Command::new("apt")
             .args(&["install", "-y"])
             .args(package.extra_args.clone())
             .args(&package.packages())
